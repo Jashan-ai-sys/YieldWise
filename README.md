@@ -29,7 +29,7 @@ graph TD
     A -->|2. POST /api/analyze| B
     A -->|3. POST /api/recommend| B
     B -->|4. Business Logic| B
-    A -.->|5. Booking Handoff| C[[Blostem Partner API\n(Real World)]]
+    A -.->|5. Booking Handoff| C["Blostem Partner API<br/>(Real World)"]
     
     subgraph Blostem Infrastructure
     C --> D[Multi-Bank Marketplace]
