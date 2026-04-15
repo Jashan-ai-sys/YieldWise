@@ -7,6 +7,51 @@ The app understands user spending, explains savings choices in simple words, rec
 
 ---
 
+## Architecture Flow
+
+```mermaid
+flowchart LR
+    %% Styles
+    classDef ui fill:#e8f8f5,stroke:#1abc9c,stroke-width:2px,color:#333
+    classDef api fill:#fef9e7,stroke:#f1c40f,stroke-width:2px,color:#333
+    classDef ai fill:#f4ecf7,stroke:#9b59b6,stroke-width:2px,color:#333
+    classDef bank fill:#fdf2e9,stroke:#e67e22,stroke-width:2px,color:#333
+    classDef data fill:#ebf5fb,stroke:#3498db,stroke-width:1px,color:#333
+
+    subgraph layer1 [1. USER LAYER]
+        direction TB
+        Input["**Data Input (Demo)**<br/>• CSV Upload<br/>• Demo JSON"]:::data
+        Frontend["**Frontend App**<br/><br/>• Dashboard<br/>• Goal Setup<br/>• AI Chat<br/>• Recommendation Card"]:::ui
+        Input -.-> Frontend
+    end
+
+    subgraph layer2 [2. APP BACKEND]
+        direction TB
+        Core["**FastAPI Core**<br/><br/>• Auth & Profile<br/>• Transaction Ingest<br/>• Recommendation API<br/>• Blostem Handoff"]:::api
+        Storage["**Storage**<br/>• PostgreSQL<br/>• Redis<br/>• pgvector"]:::data
+        Core <--> Storage
+    end
+
+    subgraph layer3 [3. AI LAYER]
+        direction TB
+        Agents["**Agent Orchestrator**<br/><br/>• Budget Agent<br/>• Cashflow Agent<br/>• FD Suggestion Agent<br/>• Finance Tutor Agent"]:::ai
+    end
+
+    subgraph layer4 [4. EXTERNAL EXECUTION]
+        direction TB
+        Blostem["**Blostem Layer**<br/><br/>• FD Product Catalog<br/>• KYC & Payment Rails<br/>• Booking Journey<br/>• Servicing"]:::bank
+        Output["**Output**<br/>• Summary & Guidance<br/>• FD Recommendation<br/>• Click-to-Book Handoff"]:::data
+        Blostem -.-> Output
+    end
+
+    %% Connections
+    Frontend <-->|"REST"| Core
+    Core <-->|"Prompts/Rules"| Agents
+    Core --->|"API/SDK"| Blostem
+```
+
+---
+
 ## 1. User Layer (Frontend App)
 The interactive interface where the user navigates their financial journey.
 - **Dashboard**: Monitors income, spending, and the safe-to-save surplus.

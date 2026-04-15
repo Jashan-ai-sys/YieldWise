@@ -16,58 +16,62 @@ from models import (
 from catalog import FD_CATALOG, CATEGORY_CONFIG, CATEGORY_KEYWORDS
 
 
-# ────────────────────────────────────────────
-# CSV Parsing + Auto-Categorization
-# ────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────
+# 1. Budget Agent
+# ─────────────────────────────────────────────────────────────────
 
-def categorize(description: str) -> str:
-    """Auto-detect category from transaction description."""
-    lower = description.lower()
-    for cat, keywords in CATEGORY_KEYWORDS.items():
-        if cat == "other":
-            continue
-        if any(kw in lower for kw in keywords):
-            return cat
-    return "other"
+class BudgetAgent:
+    """Agent responsible for cleaning and categorizing raw spending data."""
 
+    @staticmethod
+    def categorize(description: str) -> str:
+        """Auto-detect category from transaction description."""
+        lower = description.lower()
+        for cat, keywords in CATEGORY_KEYWORDS.items():
+            if cat == "other":
+                continue
+            if any(kw in lower for kw in keywords):
+                return cat
+        return "other"
 
-def parse_csv(csv_text: str) -> list[Transaction]:
-    """Parse CSV text into Transaction objects with auto-categorization."""
-    reader = csv.reader(io.StringIO(csv_text.strip()))
-    rows = list(reader)
-    if not rows:
-        return []
+    @staticmethod
+    def process_csv(csv_text: str) -> list[Transaction]:
+        """Parse CSV text into Transaction objects with auto-categorization."""
+        reader = csv.reader(io.StringIO(csv_text.strip()))
+        rows = list(reader)
+        if not rows:
+            return []
 
-    # Detect header
-    header = [h.lower().strip() for h in rows[0]]
-    has_header = any(h in header for h in ["date", "description", "amount"])
-    data_rows = rows[1:] if has_header else rows
+        # Detect header
+        header = [h.lower().strip() for h in rows[0]]
+        has_header = any(h in header for h in ["date", "description", "amount"])
+        data_rows = rows[1:] if has_header else rows
 
-    transactions = []
-    for i, row in enumerate(data_rows):
-        if len(row) < 3:
-            continue
-        date = row[0].strip()
-        description = row[1].strip()
-        try:
-            amount = float(row[2].strip().replace(",", ""))
-        except ValueError:
-            continue
+        transactions = []
+        for i, row in enumerate(data_rows):
+            if len(row) < 3:
+                continue
+            date = row[0].strip()
+            description = row[1].strip()
+            try:
+                amount = float(row[2].strip().replace(",", ""))
+            except ValueError:
+                continue
 
-        category = row[3].strip().lower() if len(row) > 3 and row[3].strip() else categorize(description)
-        # Validate category
-        if category not in CATEGORY_CONFIG:
-            category = categorize(description)
+            category = row[3].strip().lower() if len(row) > 3 and row[3].strip() else BudgetAgent.categorize(description)
+            # Validate category
+            if category not in CATEGORY_CONFIG:
+                category = BudgetAgent.categorize(description)
 
-        transactions.append(Transaction(
-            id=f"csv-{i}-{int(datetime.now().timestamp() * 1000)}",
-            date=date,
-            description=description,
-            amount=amount,
-            category=category,
-        ))
+            transactions.append(Transaction(
+                id=f"csv-{i}-{int(datetime.now().timestamp() * 1000)}",
+                date=date,
+                description=description,
+                amount=amount,
+                category=category,
+            ))
 
-    return transactions
+        return transactions
 
 
 # ────────────────────────────────────────────
@@ -168,97 +172,117 @@ def _format_month(ym: str) -> str:
         return ym
 
 
-# ────────────────────────────────────────────
-# FD Recommendation Engine
-# ────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────────
+# 3. FD Suggestion Agent
+# ─────────────────────────────────────────────────────────────────
+
+class FDSuggestionAgent:
+    """Agent responsible for mapping user goal + surplus + time horizon to the optimal FD tenure and amount."""
+
+    @staticmethod
+    def generate_recommendation(summary: SpendingSummary) -> FDRecommendation | None:
+        """Generate personalized FD recommendation based on spending analysis."""
+        safe = summary.safe_to_save
+        if safe < 5000:
+            return None
+
+        expense_ratio = summary.total_expenses / summary.total_income if summary.total_income > 0 else 1.0
+        stability = summary.stability_score
+
+        # ── Tenure selection logic ──
+        if stability == "volatile":
+            target_tenure = 6   # keep liquid
+        elif stability == "moderate" or safe < 15000:
+            target_tenure = 12
+        elif safe < 30000:
+            target_tenure = 24
+        else:
+            target_tenure = 36
+
+        suggested_amount = (int(safe) // 1000) * 1000  # round down to nearest 1000
+
+        # ── Find matching products ──
+        def score_product(p: dict) -> tuple:
+            has_tenure = target_tenure in p["tenure_options"]
+            meets_min = suggested_amount >= p["min_amount"]
+            return (has_tenure and meets_min, p["interest_rate"])
+
+        eligible = sorted(FD_CATALOG, key=score_product, reverse=True)
+        eligible = [p for p in eligible if suggested_amount >= p["min_amount"]]
+
+        if not eligible:
+            return None
+
+        def build_fd_product(p: dict, tenure: int) -> FDProduct:
+            # Find closest available tenure
+            actual_tenure = tenure if tenure in p["tenure_options"] else min(
+                p["tenure_options"], key=lambda t: abs(t - tenure)
+            )
+            tenure_label = _tenure_label(actual_tenure)
+            maturity = _calc_maturity(suggested_amount, p["interest_rate"], actual_tenure)
+            interest = maturity - suggested_amount
+
+            tags = []
+            if p["interest_rate"] >= 8.0:
+                tags.append("High yield")
+            if actual_tenure <= 12:
+                tags.append("Quick access")
+            if p["type"] == "NBFC":
+                tags.append("NBFC")
+            elif p["type"] == "HFC":
+                tags.append("Housing Finance")
+            tags.append("DICGC insured")
+
+            return FDProduct(
+                issuer=p["issuer"],
+                type=p["type"],
+                interest_rate=p["interest_rate"],
+                min_amount=p["min_amount"],
+                tenure_months=actual_tenure,
+                tenure_label=tenure_label,
+                lock_in_note=p["lock_in_note"],
+                trust_context=p["trust_context"],
+                maturity_amount=maturity,
+                interest_earned=interest,
+                tags=tags,
+            )
+
+        primary = build_fd_product(eligible[0], target_tenure)
+        alternatives = [build_fd_product(p, target_tenure) for p in eligible[1:3]]
+
+        # ── Build explanation ──
+        top_expense = summary.category_breakdown[0] if summary.category_breakdown else None
+        top_label = top_expense.label.lower() if top_expense else "general expenses"
+
+        headline = _build_headline(stability, suggested_amount, primary)
+        details = _build_details(summary, primary, top_label, stability)
+        liquidity = _build_liquidity_note(stability, primary)
+
+        return FDRecommendation(
+            primary=primary,
+            alternatives=alternatives,
+            suggested_amount=suggested_amount,
+            reason_headline=headline,
+            reason_details=details,
+            risk_level="low",
+            liquidity_note=liquidity,
+        )
+
+
+# ─────────────────────────────────────────────────────────────────
+# Agent Orchestrator (Router Hooks for FastAPI)
+# ─────────────────────────────────────────────────────────────────
+def parse_csv(csv_text: str) -> list[Transaction]:
+    """Router hook that delegates to the Budget Agent."""
+    return BudgetAgent.process_csv(csv_text)
+
+def analyze(transactions: list[Transaction]) -> SpendingSummary:
+    """Router hook that delegates to the Cashflow Agent."""
+    return CashflowAgent.calculate_surplus(transactions)
 
 def recommend(summary: SpendingSummary) -> FDRecommendation | None:
-    """Generate personalized FD recommendation based on spending analysis."""
-    safe = summary.safe_to_save
-    if safe < 5000:
-        return None
-
-    expense_ratio = summary.total_expenses / summary.total_income if summary.total_income > 0 else 1.0
-    stability = summary.stability_score
-
-    # ── Tenure selection logic ──
-    if stability == "volatile":
-        target_tenure = 6   # keep liquid
-    elif stability == "moderate" or safe < 15000:
-        target_tenure = 12
-    elif safe < 30000:
-        target_tenure = 24
-    else:
-        target_tenure = 36
-
-    suggested_amount = (int(safe) // 1000) * 1000  # round down to nearest 1000
-
-    # ── Find matching products ──
-    def score_product(p: dict) -> tuple:
-        has_tenure = target_tenure in p["tenure_options"]
-        meets_min = suggested_amount >= p["min_amount"]
-        return (has_tenure and meets_min, p["interest_rate"])
-
-    eligible = sorted(FD_CATALOG, key=score_product, reverse=True)
-    eligible = [p for p in eligible if suggested_amount >= p["min_amount"]]
-
-    if not eligible:
-        return None
-
-    def build_fd_product(p: dict, tenure: int) -> FDProduct:
-        # Find closest available tenure
-        actual_tenure = tenure if tenure in p["tenure_options"] else min(
-            p["tenure_options"], key=lambda t: abs(t - tenure)
-        )
-        tenure_label = _tenure_label(actual_tenure)
-        maturity = _calc_maturity(suggested_amount, p["interest_rate"], actual_tenure)
-        interest = maturity - suggested_amount
-
-        tags = []
-        if p["interest_rate"] >= 8.0:
-            tags.append("High yield")
-        if actual_tenure <= 12:
-            tags.append("Quick access")
-        if p["type"] == "NBFC":
-            tags.append("NBFC")
-        elif p["type"] == "HFC":
-            tags.append("Housing Finance")
-        tags.append("DICGC insured")
-
-        return FDProduct(
-            issuer=p["issuer"],
-            type=p["type"],
-            interest_rate=p["interest_rate"],
-            min_amount=p["min_amount"],
-            tenure_months=actual_tenure,
-            tenure_label=tenure_label,
-            lock_in_note=p["lock_in_note"],
-            trust_context=p["trust_context"],
-            maturity_amount=maturity,
-            interest_earned=interest,
-            tags=tags,
-        )
-
-    primary = build_fd_product(eligible[0], target_tenure)
-    alternatives = [build_fd_product(p, target_tenure) for p in eligible[1:3]]
-
-    # ── Build explanation ──
-    top_expense = summary.category_breakdown[0] if summary.category_breakdown else None
-    top_label = top_expense.label.lower() if top_expense else "general expenses"
-
-    headline = _build_headline(stability, suggested_amount, primary)
-    details = _build_details(summary, primary, top_label, stability)
-    liquidity = _build_liquidity_note(stability, primary)
-
-    return FDRecommendation(
-        primary=primary,
-        alternatives=alternatives,
-        suggested_amount=suggested_amount,
-        reason_headline=headline,
-        reason_details=details,
-        risk_level="low",
-        liquidity_note=liquidity,
-    )
+    """Router hook that delegates to the FD Suggestion Agent."""
+    return FDSuggestionAgent.generate_recommendation(summary)
 
 
 def _tenure_label(months: int) -> str:

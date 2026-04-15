@@ -7,44 +7,57 @@ from models import SpendingSummary, FDRecommendation
 from catalog import CATEGORY_CONFIG
 
 
+class FinanceTutorAgent:
+    """
+    Explains financial concepts natively in conversational language.
+    (This class stubs the planned RAG vector implementation outlined in the MVP System Design).
+    """
+    @staticmethod
+    def converse(question: str, summary: SpendingSummary | None, recommendation: FDRecommendation | None) -> str:
+        q = question.lower().strip()
+
+        # ── What is an FD ──
+        if "what is" in q and ("fd" in q or "fixed deposit" in q):
+            return _explain_fd()
+
+        # ── Why this recommendation ──
+        if "why" in q and any(w in q for w in ["recommend", "suggesting", "this fd", "this"]):
+            return _explain_recommendation(summary, recommendation)
+
+        # ── Can I save X ──
+        if "can i" in q and "save" in q:
+            return _check_savings(q, summary)
+
+        # ── Savings account vs FD ──
+        if "savings" in q and any(w in q for w in ["why not", "instead", "vs", "versus", "better"]):
+            return _compare_savings_fd(summary)
+
+        # ── Spending summary ──
+        if any(w in q for w in ["summary", "spending", "overview", "breakdown"]):
+            return _spending_summary(summary)
+
+        # ── Emergency fund ──
+        if "emergency" in q:
+            return _emergency_fund(summary)
+
+        # ── How much to invest ──
+        if any(w in q for w in ["how much", "invest", "put in"]):
+            return _how_much(summary, recommendation)
+
+        # ── Greeting ──
+        if any(w in q for w in ["hello", "hi", "hey"]) or len(q) < 10:
+            return _greeting()
+
+        # ── Catch-all ──
+        return _fallback()
+
+
+# ─────────────────────────────────────────────────────────────────
+# Agent Orchestrator (Router Hook)
+# ─────────────────────────────────────────────────────────────────
 def respond(question: str, summary: SpendingSummary | None, recommendation: FDRecommendation | None) -> str:
-    """Generate a grounded, beginner-friendly response."""
-    q = question.lower().strip()
-
-    # ── What is an FD ──
-    if "what is" in q and ("fd" in q or "fixed deposit" in q):
-        return _explain_fd()
-
-    # ── Why this recommendation ──
-    if "why" in q and any(w in q for w in ["recommend", "suggesting", "this fd", "this"]):
-        return _explain_recommendation(summary, recommendation)
-
-    # ── Can I save X ──
-    if "can i" in q and "save" in q:
-        return _check_savings(q, summary)
-
-    # ── Savings account vs FD ──
-    if "savings" in q and any(w in q for w in ["why not", "instead", "vs", "versus", "better"]):
-        return _compare_savings_fd(summary)
-
-    # ── Spending summary ──
-    if any(w in q for w in ["summary", "spending", "overview", "breakdown"]):
-        return _spending_summary(summary)
-
-    # ── Emergency fund ──
-    if "emergency" in q:
-        return _emergency_fund(summary)
-
-    # ── How much to invest ──
-    if any(w in q for w in ["how much", "invest", "put in"]):
-        return _how_much(summary, recommendation)
-
-    # ── Greeting ──
-    if any(w in q for w in ["hello", "hi", "hey"]) or len(q) < 10:
-        return _greeting()
-
-    # ── Catch-all ──
-    return _fallback()
+    """Router hook that delegates the user's question to the Finance Tutor Agent."""
+    return FinanceTutorAgent.converse(question, summary, recommendation)
 
 
 def _explain_fd() -> str:
