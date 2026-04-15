@@ -15,7 +15,7 @@ Follow these 6 steps to experience the complete end-to-end integration:
 3. **Analyze Dashboard**: View the dynamic Recharts pie/bar charts tracking total spending, income, and emergency buffering logic identifying the "safe-to-save" amount.
 4. **Discover the Recommendation**: See the "Why this FD?" section offering a hyper-personalized tenure and amount matching the user's spending volatility score.
 5. **Chat Explanation**: Launch the integrated AI Chat coach and ask "Why a 6-month FD instead of 1 year?" for a context-aware defense of the recommendation.
-6. **Blostem Handoff**: Proceed to the Booking flow screen. Click "Confirm" to reach the handoff simulation where the payload is sent to Blostem APIs.
+6. **Blostem Handoff**: Proceed to the Booking flow screen. Click "Confirm" to reach the handoff simulation where the MVP simulates the booking handoff; in production, the recommendation payload would be forwarded into Blostem’s FD infrastructure for issuer selection, KYC, payments, booking, and servicing.
 
 ---
 
@@ -39,8 +39,28 @@ graph TD
     end
 ```
 
-### Production Readiness: The Blostem Handoff
-In a production setting, the payload from step 6 (`suggestedAmount`, `tenureMonths`, `bankIssuer`) is shipped to the Blostem API endpoints (e.g., `POST /v1/fd/book`). Blostem’s white-label flow would then manage KYC matching, seamless payment rails, and ledger updating, while YieldWise only has to display the returned JSON as a "Booked" state in the UI.
+## Current MVP vs Production Plan
+
+| Layer | Current MVP | Production Plan |
+| :--- | :--- | :--- |
+| **Transaction Input** | Mock CSV upload and built-in sample transactions | Bank/account data ingestion or partner-led financial data sources |
+| **Expense Intelligence** | Heuristic parser and categorizer in FastAPI | Better classification pipeline with learned models and transaction normalization |
+| **Recommendation Engine** | Rule-based FD suggestion based on surplus and volatility | Personalized scoring engine using live product catalog, goal timelines, and risk-aware user behavior |
+| **Chat / Guidance** | Context-aware rules-based financial coach | RAG-based assistant using FD docs, issuer terms, FAQs, and user context |
+| **FD Catalog** | Mock catalog in local backend | Live product and issuer inventory via Blostem integration |
+| **Booking Flow** | Simulated handoff screen | Real handoff into Blostem white-label FD journey for KYC, payment, and servicing |
+| **Post-booking state** | Static success screen | Real booking status, servicing, maturity alerts, and portfolio sync through Blostem rails |
+
+YieldWise is intentionally built as the AI discovery and recommendation layer that sits above Blostem’s FD infrastructure. In the MVP, transaction ingestion, recommendation, and booking handoff are simulated with mock data so the end-to-end user journey can be demonstrated clearly. In production, the same UX would connect to Blostem’s live FD infrastructure for multi-bank marketplace access, KYC orchestration, payment rails, booking workflows, and servicing.
+
+## RAG & Future Stack
+
+The current MVP uses structured rules and a lightweight contextual coach for speed and demo reliability. The production design adds a RAG layer so the assistant can answer using grounded financial context instead of generic LLM responses. The retrieval layer would ingest Blostem product documentation, issuer details, tenure/rate metadata, FAQ content, financial literacy material, and user-specific recommendation context before generating answers.
+
+- **Vector DB**: pgvector or Qdrant.
+- **Knowledge sources**: Blostem FD docs, issuer notes, support FAQs, user recommendation history.
+- **LLM role**: explain “why this FD,” compare tenure choices, answer financial literacy questions.
+- **Goal**: grounded, explainable responses rather than generic chatbot output.
 
 ---
 
@@ -84,3 +104,9 @@ npm install
 npm run dev
 ```
 *(Runs on `http://localhost:3000`)*
+
+---
+
+## Why this fits Blostem
+
+In a production setting, the payload from step 6 (`suggestedAmount`, `tenureMonths`, `bankIssuer`) is shipped to the Blostem API endpoints (e.g., `POST /v1/fd/book`). Blostem’s white-label flow would then manage KYC matching, seamless payment rails, and ledger updating, while YieldWise only has to display the returned JSON as a "Booked" state in the UI.
