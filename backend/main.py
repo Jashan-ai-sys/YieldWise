@@ -14,16 +14,27 @@ from engine import parse_csv, analyze, recommend
 from chat import respond
 from catalog import FD_CATALOG
 
+import os
+
 app = FastAPI(
     title="SaveSmart API",
     description="AI Money Coach backend — spending analysis, FD recommendations, and financial chat.",
     version="1.0.0",
 )
 
-# CORS — allow frontend dev server
+# CORS — allow frontend dev server + deployed frontend
+_extra_origins = os.getenv("CORS_ORIGINS", "").split(",")
+_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
+] + [o.strip() for o in _extra_origins if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"],
+    allow_origins=_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",   # any Vercel preview deploy
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
