@@ -74,18 +74,29 @@ The orchestration engine that handles standard API transactions and connects the
   - Blostem Hand-off endpoint
 - **Tech Stack**: FastAPI, Python, REST APIs.
 
-### Infrastructure & Storage (Production Vision)
+### Infrastructure & Storage 
+**In MVP (Hackathon scope):**
+- Entirely **stateless and in-memory**. Zero database setup required to guarantee seamless judging deployment.
+
+**Production Vision:**
 - **PostgreSQL**: Stores users, transactions, goals, recommendations, and chat history.
 - **Redis**: Caches product list, tracks short-lived session states, and holds fast agent context.
-- **pgvector / vector store**: Holds finance FAQs, FD explainers, and product metadata for the tutor agent (RAG).
+- **pgvector**: Holds finance FAQs, FD explainers, and product metadata for the tutor agent (RAG).
 
 ## 3. AI Layer (Agent Orchestrator)
-One router coordinates a localized team of simple, distinct agents instead of one monolithic, complicated LLM prompt.
+One router coordinates a localized team of simple, distinct agents.
+
+**In MVP (Hackathon scope):**
+- Built using **pure heuristic Python classes** simulating agent behaviors. 
+- Guarantees 0 latency, 100% demo uptime, and requires no external API keys.
+
+**Production Vision:**
+- Migrate to LangGraph + real LLMs for dynamic reasoning instead of one monolithic, complicated LLM prompt.
+
 - **Budget Agent**: Categorizes raw spending into standardized buckets (rent, food, travel, shopping, bills).
 - **Cashflow Agent**: Calculates the accurate "safe-to-save" amount after assessing baseline monthly expenses.
 - **FD Suggestion Agent**: Maps the user goal + surplus + time horizon to the optimal FD tenure and deposit amount.
 - **Finance Tutor Agent**: Explains *"why this FD?"* natively in conversational, beginner-friendly language.
-- **Tech Stack**: LangGraph, LLM API, structured Rules + Prompts.
 
 ## 4. External Execution (Blostem Layer)
 The regulated banking layer that sits entirely external to the YieldWise AI logic.
@@ -121,8 +132,8 @@ The regulated banking layer that sits entirely external to the YieldWise AI logi
 ### Fastest Implementation Stack
 - **Frontend**: Next.js
 - **Backend**: FastAPI
-- **DB**: Postgres + Redis *(Mocked locally via SQLite for demo speed)*
-- **AI**: LangGraph + LLM API
+- **DB**: Fully stateless in-memory *(Production: Postgres + Redis)*
+- **AI**: Heuristic Python classes *(Production: LangGraph + LLM API)*
 
 ### What NOT to Overbuild
 To ensure a flawless Hackathon delivery, we explicitly avoid:

@@ -65,18 +65,20 @@ YieldWise is an **AI money coach on top of Blostem**. All the intelligence and U
 - **Frontend (Next.js + TypeScript + Tailwind)**  
   Dashboard for income/spend/safe‑to‑save, goal setup, AI chat, and an FD recommendation card with a **Book FD** CTA.
 
-- **Backend (FastAPI + PostgreSQL + Redis)**  
-  Handles auth, transaction ingest/cleanup, safe‑to‑save computation, recommendation and chat APIs, and a Blostem handoff endpoint.
+- **Backend (FastAPI - Fully Stateless for MVP)**  
+  Handles auth, transaction ingest/cleanup, safe‑to‑save computation, recommendation, and chat APIs.  
+  *(Production scope: Add PostgreSQL for user data and Redis for session cache).*
 
-- **AI Layer (lightweight agents)**  
-  A simple orchestrator coordinates:
+- **AI Layer (Heuristic Python Agents)**  
+  A simple orchestrator coordinates localized logic. For the MVP demo, these are built as pure Python classes to guarantee zero latency and no external API key dependencies:
   - **Budget agent** – categorizes spending
   - **Cashflow agent** – computes safe‑to‑save surplus
-  - **FD Suggestion agent** – maps surplus + goal + horizon → suitable FD tenure & amount
-  - **Finance Tutor agent** – explains _“why this FD?”_ in plain English
+  - **FD Suggestion agent** – maps surplus + horizon → suitable FD tenure
+  - **Finance Tutor agent** – simulates conversational guidance
+  *(Production scope: Migrate to LangGraph + LLM APIs for dynamic reasoning).*
 
-- **Blostem Layer (external)**  
-  In production, Blostem provides the FD product catalog, KYC and payment rails, booking journey, and servicing via its API/SDK. YieldWise stays the intelligence + UX layer on top.
+- **Blostem Layer (External / Simulated)**  
+  In production, Blostem provides the FD product catalog, KYC, payment rails, and servicing via its API/SDK. For the MVP, the handoff is simulated to demonstrate the UX layer gracefully passing control.
 
 ➡ For a deeper architecture walkthrough, see [`SYSTEM_DESIGN.md`](./SYSTEM_DESIGN.md).
 
