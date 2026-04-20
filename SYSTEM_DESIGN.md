@@ -22,7 +22,10 @@ flowchart LR
         direction TB
         Input["**Data Input (Demo)**<br/>• CSV Upload<br/>• Demo JSON"]:::data
         Frontend["**Frontend App**<br/><br/>• Dashboard<br/>• Goal Setup<br/>• AI Chat<br/>• Recommendation Card"]:::ui
+        Output["**Deliverables**<br/>• Summary & Guidance<br/>• FD Recommendation<br/>• Click-to-Book Handoff"]:::data
+        
         Input -.-> Frontend
+        Frontend ===> Output
     end
 
     subgraph layer2 [2. APP BACKEND]
@@ -40,8 +43,6 @@ flowchart LR
     subgraph layer4 [4. EXTERNAL EXECUTION]
         direction TB
         Blostem["**Blostem Layer**<br/><br/>• FD Product Catalog<br/>• KYC & Payment Rails<br/>• Booking Journey<br/>• Servicing"]:::bank
-        Output["**Output**<br/>• Summary & Guidance<br/>• FD Recommendation<br/>• Click-to-Book Handoff"]:::data
-        Blostem -.-> Output
     end
 
     %% Connections

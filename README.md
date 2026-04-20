@@ -78,7 +78,7 @@ YieldWise is an **AI money coach on top of Blostem**. All the intelligence and U
 - **Blostem Layer (external)**  
   In production, Blostem provides the FD product catalog, KYC and payment rails, booking journey, and servicing via its API/SDK. YieldWise stays the intelligence + UX layer on top.
 
-➡ For a deeper architecture walkthrough, see [`docs/system-design.md`](./docs/system-design.md).
+➡ For a deeper architecture walkthrough, see [`SYSTEM_DESIGN.md`](./SYSTEM_DESIGN.md).
 
 ---
 
