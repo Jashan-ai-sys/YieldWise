@@ -78,7 +78,7 @@ class BudgetAgent:
 # Spending Analysis
 # ────────────────────────────────────────────
 
-def analyze(transactions: list[Transaction]) -> SpendingSummary:
+def _analyze_impl(transactions: list[Transaction]) -> SpendingSummary:
     """Compute spending summary with stability scoring and personalized insight."""
     total_income = sum(t.amount for t in transactions if t.amount > 0)
     total_expenses = abs(sum(t.amount for t in transactions if t.amount < 0))
@@ -277,8 +277,8 @@ def parse_csv(csv_text: str) -> list[Transaction]:
     return BudgetAgent.process_csv(csv_text)
 
 def analyze(transactions: list[Transaction]) -> SpendingSummary:
-    """Router hook that delegates to the Cashflow Agent."""
-    return CashflowAgent.calculate_surplus(transactions)
+    """Router hook that delegates to the spending analysis engine."""
+    return _analyze_impl(transactions)
 
 def recommend(summary: SpendingSummary) -> FDRecommendation | None:
     """Router hook that delegates to the FD Suggestion Agent."""
