@@ -1,5 +1,7 @@
 # YieldWise (Blostem Hackathon MVP)
 
+**🔴 Live Demo:** [https://yield-wise-66gr.vercel.app/](https://yield-wise-66gr.vercel.app/)
+
 YieldWise is an AI-powered financial coach that helps users move from expense tracking to wealth-building. It analyzes transaction data, identifies a personalized safe-to-save surplus, and recommends suitable fixed deposit options. The MVP demonstrates the user-facing discovery and recommendation layer, while Blostem represents the downstream FD infrastructure layer for marketplace access, KYC, payments, booking, and servicing in production.
 
 ---
