@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: yieldwise-backend
+    env: docker
+    rootDir: backend
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: FRONTEND_ORIGIN
+        value: https://yieldwise-frontend.onrender.com
+
+  - type: web
+    name: yieldwise-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://yieldwise-backend.onrender.com

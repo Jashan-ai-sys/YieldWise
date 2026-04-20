@@ -1,5 +1,22 @@
 # YieldWise (Blostem Hackathon MVP)
 
+## 🔗 Live Deployment Snapshot
+
+- **Live frontend URL**: https://yieldwise-frontend.onrender.com
+- **Live backend URL**: https://yieldwise-backend.onrender.com
+- **Backend health endpoint**: https://yieldwise-backend.onrender.com/api/health
+
+### Demo credentials / reviewer steps
+
+- **Credentials required**: None for this hackathon MVP.
+- Open the frontend URL.
+- Wait for the startup health check banner to confirm backend connectivity.
+- Use the API quick actions or run the full flow through `/api/upload`, `/api/analyze`, `/api/recommend`, and `/api/chat`.
+
+> If you fork this repo, replace these URLs with your own Render/Railway/Fly (backend) and Vercel/Netlify (frontend) deployment URLs.
+
+---
+
 YieldWise is an AI-powered financial coach that helps users move from expense tracking to wealth-building. It analyzes transaction data, identifies a personalized safe-to-save surplus, and recommends suitable fixed deposit options. The MVP demonstrates the user-facing discovery and recommendation layer, while Blostem represents the downstream FD infrastructure layer for marketplace access, KYC, payments, booking, and servicing in production.
 
 ---
@@ -108,3 +125,12 @@ npm run dev
 ## Why this fits Blostem
 
 In a production deployment, the recommendation payload from YieldWise would be forwarded into Blostem’s FD infrastructure for issuer selection, KYC orchestration, payment rails, booking workflows, and post-booking servicing. YieldWise would remain the user-facing intelligence layer, while Blostem would manage the regulated execution layer underneath.
+
+
+## Known limitations (hackathon MVP)
+
+- The recommendation engine is deterministic and rule-based, not trained on personalized historical outcomes.
+- Product catalog data is mock/static, not pulled from a live issuer inventory in real time.
+- No production auth/session layer is implemented in this MVP, so endpoints are demo-oriented.
+- AI chat is lightweight context logic and not yet backed by production RAG with compliance guardrails.
+- Error handling is optimized for demo clarity (fast feedback) rather than full banking-grade resiliency and observability.

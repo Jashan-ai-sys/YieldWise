@@ -1,14 +1,16 @@
 """
 SaveSmart API — FastAPI backend.
-Endpoints: /api/upload, /api/analyze, /api/recommend, /api/chat, /api/catalog
+Endpoints: /api/health, /api/upload, /api/analyze, /api/recommend, /api/chat, /api/catalog
 """
+
+import os
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import (
     AnalyzeRequest, ChatRequest, ChatResponse,
-    SpendingSummary, FDRecommendation, Transaction,
+    SpendingSummary, Transaction,
 )
 from engine import parse_csv, analyze, recommend
 from chat import respond
@@ -17,22 +19,42 @@ from catalog import FD_CATALOG
 app = FastAPI(
     title="SaveSmart API",
     description="AI Money Coach backend — spending analysis, FD recommendations, and financial chat.",
-    version="1.0.0",
+    version="1.1.0",
 )
 
-# CORS — allow frontend dev server
+frontend_origin = os.getenv("FRONTEND_ORIGIN", "").strip()
+allowed_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+if frontend_origin:
+    allowed_origins.append(frontend_origin)
+
+# CORS — allow local and deployed frontend origins.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+@app.on_event("startup")
+def startup_checks() -> None:
+    """Fail fast if the app starts in an invalid state."""
+    if not FD_CATALOG:
+        raise RuntimeError("FD_CATALOG is empty. Cannot serve recommendation APIs.")
+
+
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "service": "savesmart-api", "version": "1.0.0"}
+    return {
+        "status": "ok",
+        "service": "savesmart-api",
+        "version": "1.1.0",
+        "catalogSize": len(FD_CATALOG),
+    }
 
 
 @app.post("/api/upload", response_model=list[Transaction])
